@@ -1,0 +1,28 @@
+manifestVersion: 1
+name: '@vcjdeboer/uc2-esp'
+version: 2026.09.12.1
+description: >
+  Drive a UC2-ESP device from swamp over USB serial and record every exchange
+  as versioned data. One model type, `uc2-device`, speaks the UC2-ESP task
+  protocol ({task, qid, ...} with ACK, async events and a final DONE correlated
+  by request id) from Diederich et al., J. Microscopy 2026 (doi:10.1111/jmi.70147).
+repository: 'https://github.com/vcjdeboer/uc2-esp'
+license: MIT
+models:
+  - uc2_device.ts
+workflows: []
+vaults: []
+drivers: []
+datastores: []
+reports: []
+additionalFiles:
+  - README.md
+  - LICENSE
+  - extensions/files/serial_worker.ts
+binaries: []
+dependencies: []
+platforms:
+  - darwin-aarch64
+  - darwin-x86_64
+  - linux-x86_64
+  - linux-aarch64

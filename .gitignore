@@ -1,0 +1,9 @@
+# swamp runtime data
+.swamp/
+.swamp-sources.yaml
+
+# Deno
+deno.lock
+
+# OS
+.DS_Store
