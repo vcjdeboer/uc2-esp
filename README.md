@@ -1,4 +1,4 @@
-# @vcjdeboer/uc2-esp v2026.09.12.1 — Swamp Club Extension
+# @vcjdeboer/uc2-esp v2026.09.12.3 — Swamp Club Extension
 
 Drive a [UC2-ESP](https://github.com/youseetoo/uc2-esp32) device from swamp over
 USB serial, and record every exchange as versioned data. UC2-ESP is an

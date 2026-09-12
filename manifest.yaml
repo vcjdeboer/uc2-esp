@@ -1,6 +1,6 @@
 manifestVersion: 1
 name: '@vcjdeboer/uc2-esp'
-version: 2026.09.12.1
+version: 2026.09.12.3
 description: >
   Drive a UC2-ESP device from swamp over USB serial and record every exchange
   as versioned data. One model type, `uc2-device`, speaks the UC2-ESP task
