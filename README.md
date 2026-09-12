@@ -1,4 +1,4 @@
-# @vcjdeboer/uc2-esp v2026.09.12.3 — Swamp Club Extension
+# @vcjdeboer/uc2-esp v2026.09.12.4 — Swamp Club Extension
 
 Drive a [UC2-ESP](https://github.com/youseetoo/uc2-esp32) device from swamp over
 USB serial, and record every exchange as versioned data. UC2-ESP is an
@@ -59,10 +59,18 @@ For faster back-to-back calls, keep the port open in a detached worker with
 
 | Model type | For | Methods |
 | --- | --- | --- |
-| `@vcjdeboer/uc2-device` | A device running UC2-ESP firmware | `detect`, `act`, `get`, `hold`, `release` |
+| `@vcjdeboer/uc2-device` | A device running UC2-ESP firmware | `detect`, `act`, `get`, `listen`, `hold`, `release` |
 
 `act` runs a `/…_act` endpoint and records the ACK, the async events, and the
 final DONE. `get` reads a `/…_get` endpoint and records the returned state.
+`listen` captures unsolicited events the device pushes on its own (an encoder
+turning, a heartbeat) — the async leg of the protocol:
+
+```
+swamp model method run scope listen --input timeoutMs=3000
+swamp data get scope events-latest --json    # the captured event lines
+```
+
 Every record carries an explicit `outcome` (ok, error, or timeout), so a run
 that fails partway is always distinguishable in the data. Reference records in
 workflows as `data.latest("scope", "act-latest")`.

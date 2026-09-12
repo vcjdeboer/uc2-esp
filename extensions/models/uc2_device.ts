@@ -87,6 +87,18 @@ const ActSchema = z.object({
   elapsedMs: z.number(),
 });
 
+const EventsSchema = z.object({
+  events: z.array(z.record(z.string(), z.unknown())).describe(
+    "Unsolicited event lines (JSON with an \"event\" field, no qid) captured in the window",
+  ),
+  count: z.number(),
+  timeoutMs: z.number(),
+  raw: z.string(),
+  outcome: OUTCOME,
+  observedAt: z.iso.datetime(),
+  elapsedMs: z.number(),
+});
+
 const StateSchema = z.object({
   task: z.string().describe("The GET endpoint, e.g. /motor_get"),
   qid: z.number(),
@@ -198,6 +210,11 @@ export const model = {
     "state": {
       description: "One UC2 GET request and the state the board returned",
       schema: StateSchema,
+      ...EVIDENTIARY,
+    },
+    "events": {
+      description: "Unsolicited events the device pushed during a listen window",
+      schema: EventsSchema,
       ...EVIDENTIARY,
     },
     "holder": {
@@ -352,6 +369,42 @@ export const model = {
               `(recorded as state-latest, outcome=timeout).`,
           );
         }
+        return { dataHandles: [handle] };
+      },
+    },
+
+    listen: {
+      description:
+        "Listen for unsolicited event lines (JSON with an \"event\" field and " +
+        "no qid) for timeoutMs and record them. The device talks without being " +
+        "asked, e.g. an encoder turning or a heartbeat after `act /events_act`; " +
+        "this is the async leg of the UC2 protocol.",
+      arguments: z.object({
+        timeoutMs: z.number().int().positive().optional().describe(
+          "How long to listen; defaults to the global timeoutMs",
+        ),
+      }),
+      execute: async (args: { timeoutMs?: number }, ctx: MethodContext) => {
+        const g = ctx.globalArgs;
+        const timeoutMs = args.timeoutMs ?? g.timeoutMs;
+        const t0 = performance.now();
+        const r = await withLink(ctx, ({ link }) => link.read(timeoutMs));
+        if (!r.ok) throw new Error(`listen failed: ${r.error}`);
+        const raw = stripEscapes(r.data ?? "");
+        const events = jsonLines(raw).filter((o) => "event" in o);
+        ctx.logger.info("captured {n} event(s) in {ms} ms", {
+          n: events.length,
+          ms: timeoutMs,
+        });
+        const handle = await ctx.writeResource("events", "events-latest", {
+          events,
+          count: events.length,
+          timeoutMs,
+          raw,
+          outcome: "ok",
+          observedAt: new Date().toISOString(),
+          elapsedMs: Math.round(performance.now() - t0),
+        });
         return { dataHandles: [handle] };
       },
     },

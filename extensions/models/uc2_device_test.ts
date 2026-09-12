@@ -41,8 +41,8 @@ async function fakeBoard(): Promise<{ device: string; stop: () => Promise<void> 
 
 Deno.test("model exposes the UC2 methods and resources", () => {
   assertEquals(model.type, "@vcjdeboer/uc2-device");
-  assertEquals(Object.keys(model.methods).sort(), ["act", "detect", "get", "hold", "release"]);
-  assert("act" in model.resources && "state" in model.resources);
+  assertEquals(Object.keys(model.methods).sort(), ["act", "detect", "get", "hold", "listen", "release"]);
+  assert("act" in model.resources && "state" in model.resources && "events" in model.resources);
 });
 
 Deno.test("every method writes a spec that exists, with a spec-prefixed instance name", () => {
@@ -97,6 +97,23 @@ Deno.test("get exchange returns the state payload for its qid", async () => {
     assert(ex.final !== null);
     assertEquals(ex.final!.value, 42);
     assertEquals(ex.final!.qid, 9);
+  } finally {
+    await link.close();
+    await fb.stop();
+  }
+});
+
+Deno.test("listen captures unsolicited events the device pushes", async () => {
+  const fb = await fakeBoard();
+  const link = await SerialLink.create({ workerPath: WORKER });
+  try {
+    assert((await link.open(fb.device)).ok);
+    await link.write("events on 80\n"); // fake board starts emitting ticks
+    const r = await link.read(600);
+    const events = jsonLines(r.data ?? "").filter((o) => "event" in o);
+    assert(events.length >= 2, `expected >=2 events, got ${events.length}`);
+    assertEquals(events[0].event, "tick");
+    await link.write("events off\n");
   } finally {
     await link.close();
     await fb.stop();

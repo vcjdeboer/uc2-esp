@@ -27,6 +27,9 @@ print(os.ttyname(slave), flush=True)
 
 raw = False
 buf = b""
+events_on = False
+events_interval = 0.1
+last_event = time.monotonic()
 
 
 def send(b: bytes):
@@ -34,6 +37,9 @@ def send(b: bytes):
 
 
 while True:
+    if events_on and time.monotonic() - last_event >= events_interval:
+        send(b'{"event": "tick", "uptime": %d}\r\n' % int(time.monotonic() * 1000))
+        last_event = time.monotonic()
     r, _, _ = select.select([master, sys.stdin], [], [], 0.05)
     if sys.stdin in r:
         if not sys.stdin.readline():
@@ -91,6 +97,13 @@ while True:
                         send(('{"qid": %d, "result": "done", "success": 1, "task": %s}\r\n' % (q, json.dumps(t))).encode())  # DONE
                 elif req is not None:
                     send(b'{"ok": false, "error": "bad request"}\r\n')
+            elif cmd.startswith(b"events"):
+                parts = cmd.split()
+                events_on = (len(parts) >= 2 and parts[1] == b"on")
+                if len(parts) >= 3:
+                    events_interval = int(parts[2]) / 1000.0
+                last_event = time.monotonic()
+                send(('{"ok": true, "events": %s}\r\n' % ("true" if events_on else "false")).encode())
             elif cmd == b"ping":
                 send(b'{"ok": true, "fw": "fake 0.1"}\r\n')
             elif cmd == b"quiet":
